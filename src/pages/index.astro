@@ -1,0 +1,528 @@
+﻿---
+import Base from '../layouts/Base.astro';
+import ObjectArt from '../components/ObjectArt.astro';
+import { projects, tagLabels, type Tag, type ObjectName } from '../data/projects';
+import { site } from '../data/site';
+
+type WorldItem = {
+  href: string; title: string; kicker: string; year?: string;
+  object: ObjectName; tags: (Tag | 'about')[]; external?: boolean;
+};
+
+const items: WorldItem[] = [
+  ...projects.map((p) => ({ href: `/work/${p.slug}`, title: p.shortTitle, kicker: p.kicker, year: p.year, object: p.object, tags: p.tags })),
+  { href: '/about', title: 'About me', kicker: 'Story · CV', object: 'doll', tags: ['about'] },
+  { href: '/contact', title: 'Write to me', kicker: 'Contact', object: 'envelope', tags: ['about'] },
+];
+
+// Deterministic "scattered by hand" offsets.
+const scatter = [
+  [-5, 0], [4, 0], [-2, 0], [6, 0], [-4, 0],
+  [3, 0], [-6, 0], [5, 0], [-3, 0], [4, 0],
+];
+
+// Hero: objects that only show up through the lens. Each appears twice, drifting around.
+const hiddenSlugs = ['first-club', 'nefs-x-evara', 'ai-whiskey-experience', 'identity-in-xr-environments', 'creative-projects', 'personality-and-avatars'];
+const hiddenBase = hiddenSlugs.map((s) => projects.find((p) => p.slug === s)!).filter(Boolean);
+const hidden = [...hiddenBase, ...hiddenBase];
+
+// Icons that should sit perfectly straight instead of hand-tilted.
+const straight = new Set<ObjectName>(['monitor']);
+
+const filters: { id: Tag | 'all' | 'about'; label: string }[] = [
+  { id: 'all', label: 'Everything' },
+  ...(Object.keys(tagLabels) as Tag[]).map((t) => ({ id: t, label: tagLabels[t] })),
+];
+---
+<Base current="home">
+  <section class="hero" id="top" data-hero>
+    <!-- What everyone sees -->
+    <div class="hero-in wrap layer-base">
+      <p class="label hero-kicker">{site.role} · Researcher</p>
+      <h1 class="display hero-name"><span class="ln">Annushka</span><br /><em class="ln">Ebenazar</em></h1>
+      <div class="hero-foot">
+        <p class="hero-statement display">Desire, decoded and&nbsp;<em>styled.</em></p>
+        <p class="hero-intro">{site.intro}</p>
+      </div>
+      <a class="hero-scroll label" href="#world">Step inside <span aria-hidden="true">↓</span></a>
+    </div>
+
+    <!-- What the lens reveals: the researcher underneath -->
+    <div class="layer-under" aria-hidden="true">
+      <div class="hero-in wrap">
+        <p class="label hero-kicker">{site.role} · Researcher</p>
+        <p class="display hero-name"><span class="ln">Annushka</span><br /><em class="ln">Ebenazar</em></p>
+        <div class="hero-foot">
+          <p class="hero-statement display">Desire, decoded and&nbsp;<em>styled.</em></p>
+          <p class="hero-intro">{site.intro}</p>
+        </div>
+        <span class="hero-scroll label">&nbsp;</span>
+      </div>
+      <div class="hidden-objs">
+        {hidden.map((p) => (
+          <span class="hobj" data-href={`/work/${p.slug}`} data-title={p.shortTitle}><ObjectArt name={p.object} /></span>
+        ))}
+        {/* Three patterns to find, each drifting at its own pace: slow, medium, fast. */}
+        <span class="hobj hobj-target" data-target data-speed="0.3"><ObjectArt name="pattern" /></span>
+        <span class="hobj hobj-target" data-target data-speed="0.75"><ObjectArt name="pattern" /></span>
+        <span class="hobj hobj-target" data-target data-speed="1.1"><ObjectArt name="pattern" /></span>
+      </div>
+    </div>
+
+    <div class="lens-ring" aria-hidden="true"><span class="label" data-ring-label>look closer</span></div>
+
+    <!-- The game: find this pattern hidden somewhere behind the page. -->
+    <div class="seek-wrap">
+      <button type="button" class="seek" data-seek aria-pressed="false" aria-describedby="seek-status">
+        <span class="seek-art"><ObjectArt name="pattern" /></span>
+      </button>
+      <p class="seek-label label" id="seek-status" aria-live="polite" data-seek-label>Find all 3 patterns</p>
+    </div>
+
+    <p class="hero-hint label" aria-hidden="true" data-hint>
+      <span class="hint-fine" data-hint-fine>Press the pattern to play · it’s hiding behind the page</span>
+      <span class="hint-touch" data-hint-touch>Tap the pattern to play</span>
+    </p>
+    <div class="burst" aria-hidden="true" data-burst></div>
+  </section>
+
+  <section id="world" class="world" aria-labelledby="world-title">
+    <div class="wrap world-bar">
+      <h2 id="world-title" class="visually-hidden">Selected work</h2>
+      <div class="filters" role="group" aria-label="Filter work">
+        {filters.map((f) => (
+          <button type="button" class="chip neu" data-filter={f.id} aria-pressed={f.id === 'all' ? 'true' : 'false'}>{f.label}</button>
+        ))}
+      </div>
+      <div class="view" role="group" aria-label="View">
+        <span class="label">View</span>
+        <button type="button" class="view-btn neu" data-view="objects" aria-pressed="true">Objects</button>
+        <button type="button" class="view-btn neu" data-view="index" aria-pressed="false">Index</button>
+      </div>
+    </div>
+    <p class="wrap label count" aria-live="polite"><span data-count>{items.length}</span> of {items.length} worlds</p>
+
+    <div class="wrap sheet">
+    <ul class="objects" data-mode="objects">
+      {items.map((it, i) => (
+        <li class="o" data-tags={it.tags.join(' ')} style={`--rot:${straight.has(it.object) ? 0 : scatter[i % scatter.length][0]}deg; --dy:${scatter[i % scatter.length][1]}px; --i:${i}`}>
+          <a href={it.href}>
+            <span class="o-art"><ObjectArt name={it.object} /></span>
+            <span class="o-meta">
+              <span class="label o-num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="o-title">{it.title}</span>
+              <span class="label o-kicker">{it.kicker}{it.year && ` · ${it.year}`}</span>
+            </span>
+            <span class="o-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // ---------- Hero: the lens ----------
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  if (hero) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ringLabel = hero.querySelector<HTMLElement>('[data-ring-label]');
+    let w = 0, h = 0;
+    const measure = () => { const b = hero.getBoundingClientRect(); w = b.width; h = b.height; };
+    measure();
+    new ResizeObserver(measure).observe(hero);
+
+    const baseR = () => 0.7 * Math.max(78, Math.min(140, w * 0.1));
+    let x = 0, y = 0, tx = 0, ty = 0, r = 0;
+    let playing = false, won = false, startT = 0;
+    const local = (e: PointerEvent | MouseEvent) => { const b = hero.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+    const onToy = (e: Event) => !!(e.target as Element).closest('a, button');
+
+    const seekBtn = hero.querySelector<HTMLButtonElement>('[data-seek]')!;
+    const seekLabel = hero.querySelector<HTMLElement>('[data-seek-label]')!;
+    const hintFine = hero.querySelector<HTMLElement>('[data-hint-fine]')!;
+    const hintTouch = hero.querySelector<HTMLElement>('[data-hint-touch]')!;
+    const burst = hero.querySelector<HTMLElement>('[data-burst]')!;
+    const btnCentre = () => {
+      const hb = hero.getBoundingClientRect(), bb = seekBtn.getBoundingClientRect();
+      return [bb.left - hb.left + bb.width / 2, bb.top - hb.top + bb.height / 2];
+    };
+    const fmt = (ms: number) => (ms / 1000).toFixed(1) + 's';
+    let best = 0;
+    const BEST_KEY = 'pattern-best-3'; // the 3-pattern game keeps its own record
+    try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch {}
+
+    // Hidden objects: drift around, only visible inside the lens.
+    type HObj = { el: HTMLElement; href: string; title: string; x: number; y: number; vx: number; vy: number; a: number; va: number; s: number; target?: boolean; speed?: number; got?: boolean };
+    const objs: HObj[] = [...hero.querySelectorAll<HTMLElement>('.hobj')].map((el, i, all) => {
+      const cols = 4, rows = Math.ceil(all.length / cols);
+      const cx = (i % cols + 0.2 + Math.random() * 0.6) / cols, cy = (Math.floor(i / cols) + 0.2 + Math.random() * 0.6) / rows;
+      const ang = Math.random() * Math.PI * 2, sp = 0.18 + Math.random() * 0.22;
+      return { el, href: el.dataset.href ?? '', title: el.dataset.title ?? '', x: cx, y: cy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, a: Math.random() * 30 - 15, va: (Math.random() - 0.5) * 0.15, s: 0, target: 'target' in el.dataset, speed: Number(el.dataset.speed) || undefined };
+    });
+    const targets = objs.filter((o) => o.target);
+    const total = targets.length;
+    const gotCount = () => targets.filter((t) => t.got).length;
+    // Hide the patterns somewhere new: away from the button and from each other.
+    const respawn = () => {
+      const [bx, by] = btnCentre();
+      const far = Math.min(w, h) * 0.3;
+      targets.forEach((t, ti) => {
+        t.got = false; t.el.classList.remove('is-got');
+        for (let i = 0; i < 40; i++) {
+          t.x = Math.random() * Math.max(1, w - t.s);
+          t.y = Math.random() * Math.max(1, h - t.s);
+          const cx = t.x + t.s / 2, cy = t.y + t.s / 2;
+          const clearBtn = Math.hypot(cx - bx, cy - by) > far;
+          const clearOthers = targets.slice(0, ti).every((o) => Math.hypot(cx - o.x - o.s / 2, cy - o.y - o.s / 2) > far);
+          if (clearBtn && clearOthers) break;
+        }
+        const ang = Math.random() * Math.PI * 2, sp = t.speed ?? 0.45;
+        t.vx = Math.cos(ang) * sp; t.vy = Math.sin(ang) * sp;
+        t.va = (Math.random() < 0.5 ? -1 : 1) * sp * 0.25;
+      });
+    };
+    let placed = false;
+    const place = () => {
+      objs.forEach((o) => {
+        o.s = o.el.offsetWidth || 90;
+        if (!placed) { o.x = o.x * (w - o.s); o.y = o.y * (h - o.s); }
+      });
+      if (!placed) respawn();
+      placed = true;
+    };
+    const moveObjs = (step: number) => {
+      for (const o of objs) {
+        if (!reduce) {
+          o.x += o.vx * step; o.y += o.vy * step; o.a += o.va * step;
+          if (o.x < 0 || o.x > w - o.s) { o.vx *= -1; o.x = Math.max(0, Math.min(w - o.s, o.x)); }
+          if (o.y < 0 || o.y > h - o.s) { o.vy *= -1; o.y = Math.max(0, Math.min(h - o.s, o.y)); }
+        }
+        o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.a}deg)`;
+      }
+    };
+    // Which hidden object (if any) is under a point AND inside the lens right now.
+    // Patterns win when they overlap a project icon.
+    const hit = (o: HObj, px: number, py: number) => !o.got && Math.hypot(px - o.x - o.s / 2, py - o.y - o.s / 2) < o.s * 0.5 && Math.hypot(px - x, py - y) < r;
+    const found = (px: number, py: number) => targets.find((o) => hit(o, px, py)) ?? objs.find((o) => hit(o, px, py));
+    let hoverObj: HObj | undefined;
+    const setHover = (o: HObj | undefined) => {
+      if (o === hoverObj) return;
+      hoverObj = o;
+      hero.classList.toggle('on-obj', !!o);
+      if (ringLabel) ringLabel.textContent = o ? (o.target ? 'that’s it!' : `${o.title} ↗`) : 'look closer';
+    };
+
+    // ---------- The game ----------
+    const setHint = (fine: string, touch: string) => { hintFine.textContent = fine; hintTouch.textContent = touch; };
+    const start = () => {
+      playing = true; won = false; startT = performance.now();
+      if (gotCount()) respawn();
+      [x, y] = btnCentre(); tx = x; ty = y;
+      hero.classList.add('is-playing');
+      seekBtn.setAttribute('aria-pressed', 'true');
+      seekBtn.setAttribute('aria-label', 'Stop the game');
+      setHint('Move the lens to find all 3 patterns · press each one when you see it · Esc to stop', 'Drag the lens to find all 3 patterns, then tap each one');
+    };
+    const stop = (msg = 'Find all 3 patterns') => {
+      playing = false;
+      hero.classList.remove('is-playing');
+      seekBtn.setAttribute('aria-pressed', 'false');
+      seekBtn.removeAttribute('aria-label');
+      seekLabel.textContent = msg;
+      setHover(undefined);
+      setHint('Press the pattern to play · it’s hiding behind the page', 'Tap the pattern to play');
+    };
+    const sparkle = (n: number, ox?: number, oy?: number) => {
+      const shapes = ['M10 0 Q11.2 8.8 20 10 Q11.2 11.2 10 20 Q8.8 11.2 0 10 Q8.8 8.8 10 0Z', 'M10 1 L12.6 7.4 L19.5 7.9 L14.2 12.3 L15.9 19 L10 15.3 L4.1 19 L5.8 12.3 L0.5 7.9 L7.4 7.4Z'];
+      for (let i = 0; i < n; i++) {
+        const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        s.setAttribute('viewBox', '0 0 20 20');
+        s.classList.add('spark', Math.random() < 0.35 ? 'is-red' : 'is-ink');
+        s.innerHTML = `<path d="${shapes[Math.random() < 0.7 ? 0 : 1]}"/>`;
+        const size = 10 + Math.random() * 26;
+        const px = ox !== undefined && i < n / 3 ? ox + (Math.random() - 0.5) * 220 : Math.random() * w;
+        const py = oy !== undefined && i < n / 3 ? oy + (Math.random() - 0.5) * 220 : Math.random() * h;
+        s.style.cssText = `left:${px}px; top:${py}px; width:${size}px; height:${size}px; --d:${Math.random() * 0.9}s; --rot:${Math.random() * 180 - 90}deg; --dur:${0.9 + Math.random() * 0.9}s`;
+        burst.appendChild(s);
+        setTimeout(() => s.remove(), 2800);
+      }
+    };
+    const win = () => {
+      if (won) return;
+      won = true;
+      const t = performance.now() - startT;
+      const isBest = !best || t < best;
+      if (isBest) { best = t; try { localStorage.setItem(BEST_KEY, String(Math.round(t))); } catch {} }
+      sparkle(reduce ? 24 : 90, x, y);
+      hero.classList.add('is-won');
+      const msg = `Found in ${fmt(t)}${isBest ? ' · new best!' : ` · best ${fmt(best)}`}`;
+      seekLabel.textContent = msg;
+      setHint('You found them all! Resetting…', 'You found them all! Resetting…');
+      setTimeout(() => {
+        hero.classList.remove('is-won');
+        stop(`${msg} · play again?`);
+        respawn();
+      }, 2600);
+    };
+    // One pattern found: a small burst where it was, then it fades out of play.
+    const collect = (o: HObj) => {
+      o.got = true; o.el.classList.add('is-got');
+      setHover(undefined);
+      if (gotCount() >= total) { win(); return; }
+      sparkle(reduce ? 6 : 18, o.x + o.s / 2, o.y + o.s / 2);
+      const left = total - gotCount();
+      setHint(`Nice! ${left} more to go`, `Nice! ${left} more to go`);
+    };
+
+    seekBtn.addEventListener('click', () => { if (playing) stop(); else start(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && playing) stop(); });
+
+    hero.addEventListener('pointermove', (e) => {
+      if (!playing || won) return;
+      if (e.pointerType !== 'mouse' && e.buttons === 0) return;
+      [tx, ty] = local(e);
+      setHover(found(tx, ty));
+    });
+    hero.addEventListener('pointerdown', (e) => {
+      if (!playing || won || onToy(e) || e.pointerType === 'mouse') return;
+      [tx, ty] = local(e);
+    });
+    hero.addEventListener('click', (e) => {
+      if (!playing || won || onToy(e)) return;
+      const [px, py] = local(e);
+      const o = found(px, py);
+      if (!o) return;
+      if (o.target) collect(o); else location.href = o.href;
+    });
+
+    let visible = true, raf = 0;
+    let lastFrame = performance.now();
+    window.addEventListener('resize', () => objs.forEach((o) => {
+      o.s = o.el.offsetWidth || o.s;
+      o.x = Math.min(o.x, Math.max(0, w - o.s)); o.y = Math.min(o.y, Math.max(0, h - o.s));
+    }));
+    const frame = (now: number) => {
+      if (!playing) [tx, ty] = btnCentre();
+      // Easing scaled by elapsed time, so the lens keeps pace with the patterns at any frame rate.
+      const step = Math.min(3, (now - lastFrame) / 16.7);
+      const k = reduce ? 1 : 1 - Math.pow(1 - 0.16, step);
+      x += (tx - x) * k; y += (ty - y) * k;
+      const tr = playing ? baseR() * (won ? 1.25 : 1) : 0;
+      r += (tr - r) * (reduce ? 1 : 1 - Math.pow(1 - 0.14, step));
+      if (r < 0.5) r = 0;
+      if (playing && !won) seekLabel.textContent = `${gotCount()} of ${total} · ${fmt(now - startT)}`;
+      hero.style.setProperty('--lx', `${x}px`);
+      hero.style.setProperty('--ly', `${y}px`);
+      hero.style.setProperty('--lr', `${r}px`);
+      if (!placed) place();
+      moveObjs(step); lastFrame = now;
+      if (playing && hoverObj && !found(tx, ty)) setHover(undefined);
+      raf = visible ? requestAnimationFrame(frame) : 0;
+    };
+    new IntersectionObserver(([en]) => {
+      visible = en.isIntersecting;
+      if (visible && !raf) raf = requestAnimationFrame(frame);
+    }).observe(hero);
+    raf = requestAnimationFrame(frame);
+
+  }
+
+  const buttons =document.querySelectorAll<HTMLButtonElement>('.chip');
+  const items = document.querySelectorAll<HTMLLIElement>('.o');
+  const countEl = document.querySelector('[data-count]');
+
+  function apply(filter: string) {
+    let n = 0;
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
+    items.forEach((li) => {
+      const on = filter === 'all' || (li.dataset.tags ?? '').split(' ').includes(filter);
+      li.classList.toggle('is-off', !on);
+      if (on) { li.removeAttribute('inert'); n++; } else { li.setAttribute('inert', ''); }
+    });
+    if (countEl) countEl.textContent = String(n);
+    const url = new URL(location.href);
+    if (filter === 'all') url.searchParams.delete('filter'); else url.searchParams.set('filter', filter);
+    history.replaceState(null, '', url);
+  }
+  buttons.forEach((b) => b.addEventListener('click', () => apply(b.dataset.filter ?? 'all')));
+  const initial = new URLSearchParams(location.search).get('filter');
+  if (initial && document.querySelector(`.chip[data-filter="${initial}"]`)) apply(initial);
+
+  const list = document.querySelector<HTMLUListElement>('.objects');
+  const viewBtns = document.querySelectorAll<HTMLButtonElement>('.view-btn');
+  function setView(v: string) {
+    if (!list) return;
+    list.dataset.mode = v;
+    viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    try { localStorage.setItem('view', v); } catch (e) {}
+  }
+  viewBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view ?? 'objects')));
+  try { const v = localStorage.getItem('view'); if (v) setView(v); } catch (e) {}
+</script>
+
+<style>
+  /* ---------- Hero ---------- */
+  .hero { position: relative; overflow: hidden; scroll-margin-top: 400px; --lx: 30%; --ly: 40%; --lr: 0px; }
+  .hero-in { position: relative; min-height: calc(100dvh - 72px); display: grid; grid-template-rows: auto 1fr auto auto; padding-top: var(--space-7); padding-bottom: var(--space-6); }
+  .hero-name { font-size: clamp(4.25rem, 17vw, 15rem); line-height: 0.82; margin: var(--space-4) 0 var(--space-6); letter-spacing: -0.02em; }
+  .hero-name em { padding-left: 0.6em; }
+  .hero-name .ln { display: inline-block; animation: rise 1.1s var(--ease-out) both; }
+  .hero-name em.ln { animation-delay: 0.12s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(0.35em); } }
+  .hero-foot { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-7); align-items: end; align-self: end; animation: fade 1s 0.35s var(--ease-out) both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(12px); } }
+  .hero-statement { font-size: clamp(2rem, 4.2vw, 3.6rem); line-height: 1; margin: 0; }
+  .hero-statement em { font-family: var(--font-script); font-style: normal; font-size: 1.35em; color: var(--flash-red); padding-left: 0.05em; }
+  .hero-intro { margin: 0; color: var(--ink-soft); max-width: 46ch; }
+  .hero-scroll { position: relative; z-index: 6; justify-self: start; margin-top: var(--space-7); padding: var(--space-3) 0; text-decoration: none; }
+  .hero-scroll:hover { color: var(--accent); }
+
+  /* The layer the lens reveals: always the opposite mode. */
+  .layer-under {
+    /* A true colour negative of whatever page you're on: draw the page's own colours, then invert. */
+    --u-paper: var(--paper); --u-ink: var(--ink); --u-soft: var(--ink-soft); --u-accent: var(--accent); --u-red: var(--flash-red);
+    filter: invert(1);
+    position: absolute; inset: 0; z-index: 2; pointer-events: none; user-select: none;
+    background: var(--u-paper); color: var(--u-ink);
+    background-image: radial-gradient(color-mix(in srgb, var(--u-accent) 22%, transparent) 1px, transparent 1.4px);
+    background-size: 14px 14px;
+    clip-path: circle(var(--lr) at var(--lx) var(--ly));
+  }
+  .layer-under .hero-in { height: 100%; min-height: 0; }
+  .hidden-objs { position: absolute; inset: 0; }
+  .hobj.is-got { opacity: 0; transition: opacity 500ms var(--ease-out); }
+  .hobj { position: absolute; left: 0; top: 0; width: clamp(64px, 7.5vw, 104px); will-change: transform; --flash-ink: var(--u-accent); --flash-red: var(--u-red); --ink: var(--u-accent); --obj-fill: color-mix(in srgb, var(--u-accent) 18%, var(--u-paper)); --obj-fill-2: color-mix(in srgb, var(--u-accent) 32%, var(--u-paper)); --paper: var(--u-paper); --surface: var(--u-paper); }
+  .hero.on-obj { cursor: pointer; }
+
+  .lens-ring {
+    position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+    width: calc(var(--lr) * 2); height: calc(var(--lr) * 2);
+    transform: translate(calc(var(--lx) - var(--lr)), calc(var(--ly) - var(--lr)));
+    border: 1.5px solid var(--accent); border-radius: 50%;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 10%, transparent), 0 18px 50px -20px color-mix(in srgb, var(--ink) 50%, transparent);
+  }
+  .lens-ring::before, .lens-ring::after { content: ''; position: absolute; background: var(--accent); }
+  .lens-ring::before { left: 50%; top: -9px; width: 1.5px; height: 14px; }
+  .lens-ring::after { top: 50%; right: -9px; height: 1.5px; width: 14px; }
+  .lens-ring .label { position: absolute; left: 100%; top: 100%; margin: -8px 0 0 -8px; white-space: nowrap; color: var(--accent); font-size: 0.65rem; }
+
+  .lens-ring { transition: opacity 0.2s; }
+  .hero:not(.is-playing) .lens-ring { opacity: 0; }
+  .hero.is-playing { touch-action: none; }
+  .hero.is-playing .hero-scroll { touch-action: auto; }
+
+  /* The pattern button */
+  .seek-wrap {
+    position: absolute; z-index: 7; right: max(var(--space-5), calc((100% - 1200px) / 2)); top: 31%;
+    display: grid; justify-items: center; gap: calc(14px + var(--space-5)); width: clamp(120px, 13vw, 170px);
+    animation: fade 1s 0.7s var(--ease-out) both;
+  }
+  .seek {
+    position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%; padding: 15%; cursor: pointer;
+    border: 0; background: var(--paper); color: inherit;
+    box-shadow: var(--neu-raised-lg);
+    transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+    animation: seek-breathe 3.2s ease-in-out infinite;
+  }
+  .seek::after {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed var(--accent);
+    animation: seek-orbit 18s linear infinite; opacity: 0.7;
+  }
+  .seek:hover { box-shadow: var(--neu-raised); }
+  .seek:focus-visible { outline-offset: 10px; }
+  .seek-art { display: block; transition: scale var(--dur) var(--ease-out); }
+  .seek:active, .seek[aria-pressed='true'] { animation: none; box-shadow: var(--neu-inset-lg); }
+  .seek[aria-pressed='true'] .seek-art { scale: 0.92; }
+  @keyframes seek-breathe { 50% { transform: scale(1.04); } }
+  @keyframes seek-orbit { to { transform: rotate(360deg); } }
+  .seek-label { margin: 0; text-align: center; color: var(--ink); min-height: 2.6em; max-width: 22ch; }
+
+  /* Sparkles */
+  .burst { position: absolute; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; }
+  .burst :global(.spark) {
+    position: absolute; translate: -50% -50%; scale: 0; opacity: 0;
+    animation: spark var(--dur) var(--d) var(--ease-out) forwards;
+  }
+  .burst :global(.spark.is-ink) { fill: var(--accent); }
+  .burst :global(.spark.is-red) { fill: var(--flash-red); }
+  @keyframes spark {
+    0% { scale: 0; opacity: 0; rotate: 0deg; }
+    35% { scale: 1.2; opacity: 1; }
+    100% { scale: 0.2; opacity: 0; rotate: var(--rot); translate: -50% -120%; }
+  }
+  .hero.is-won .lens-ring { border-color: var(--flash-red); }
+
+  .hero-hint { position: absolute; right: max(var(--space-5), calc((100% - 1200px) / 2)); bottom: var(--space-6); z-index: 6; margin: 0; color: var(--muted); animation: fade 1s 1.4s var(--ease-out) both; }
+  .hint-touch { display: none; }
+  @media (pointer: coarse) { .hint-fine { display: none; } .hint-touch { display: inline; } }
+
+  @media (max-width: 760px) {
+    .hero-in { min-height: calc(100svh - 110px); padding-top: var(--space-8); padding-bottom: var(--space-8); }
+    .hero-name em { padding-left: 0.3em; }
+    .hero-foot { grid-template-columns: 1fr; gap: var(--space-4); }
+    .hero-hint { left: var(--space-4); right: auto; bottom: var(--space-3); }
+    .seek-wrap { top: var(--space-6); right: var(--space-5); width: 84px; gap: calc(9px + var(--space-4)); }
+    .seek { box-shadow: var(--neu-raised); }
+    .seek::after { inset: -9px; }
+    .seek-label { font-size: 0.62rem; max-width: 14ch; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-name .ln, .hero-foot, .hero-hint, .seek-wrap, .seek, .seek::after { animation: none; }
+    .burst :global(.spark) { animation-duration: 0.01s; scale: 1; opacity: 1; }
+  }
+
+  .world { padding-top: var(--space-8); scroll-margin-top: 64px; }
+  .world-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink); }
+  .filters { display: flex; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-2) 0; }
+  .chip { min-height: 38px; padding: 0 var(--space-4); font-size: 0.9rem; }
+  .view { display: flex; align-items: center; gap: var(--space-3); }
+  .view-btn { min-height: 38px; padding: 0 var(--space-4); font-size: 0.9rem; }
+  .count { margin-top: var(--space-3); max-width: none; }
+
+  /* Flash sheet frame */
+  .sheet { margin-top: var(--space-3); }
+
+  /* Objects mode */
+  .objects { list-style: none; padding: var(--space-6) 0 var(--space-7); margin: 0; }
+  .objects[data-mode='objects'] { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-6) var(--space-3); }
+  .objects[data-mode='objects'] .o { transition: opacity var(--dur) var(--ease-out), filter var(--dur); }
+  .objects[data-mode='objects'] .o a { display: grid; grid-template-rows: auto auto; align-content: start; justify-items: center; gap: var(--space-3); text-decoration: none; text-align: center; padding: var(--space-3); border-radius: 8px; height: 100%; }
+  /* Only the illustration is hand-placed; every label sits on the same straight baseline. */
+  .objects[data-mode='objects'] .o-art { width: min(149px, 74%); aspect-ratio: 1; display: grid; place-items: center; transform: rotate(var(--rot)); transition: transform var(--dur) var(--ease-out); }
+  .objects[data-mode='objects'] .o-meta { display: grid; gap: 2px; justify-items: center; }
+  .objects[data-mode='objects'] .o-num { display: none; }
+  .objects[data-mode='objects'] .o-title { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; }
+  .objects[data-mode='objects'] .o-arrow { display: none; }
+  .objects[data-mode='objects'] .o:hover .o-art { transform: rotate(0deg) scale(1.08); }
+  .objects[data-mode='objects'] .o:hover .o-title { color: var(--accent); }
+  .objects .o.is-off { opacity: 0.14; filter: grayscale(1); }
+  @media (max-width: 1100px) { .objects[data-mode='objects'] { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 860px) { .objects[data-mode='objects'] { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .objects[data-mode='objects'] { grid-template-columns: repeat(2, 1fr); gap: var(--space-6) var(--space-3); } .objects[data-mode='objects'] .o-title { font-size: 1.15rem; } }
+
+  /* Index mode */
+  .objects[data-mode='index'] { padding-top: var(--space-4); }
+  .objects[data-mode='index'] .o.is-off { display: none; }
+  .objects[data-mode='index'] .o a {
+    display: grid; grid-template-columns: 56px 64px 1fr auto 32px; align-items: center; gap: var(--space-4);
+    padding: var(--space-3) 0; border-bottom: 1px solid var(--line); text-decoration: none;
+  }
+  .objects[data-mode='index'] .o-meta { display: contents; }
+  .objects[data-mode='index'] .o-art { grid-column: 2; grid-row: 1; width: 56px; }
+  .objects[data-mode='index'] .o-num { grid-column: 1; grid-row: 1; }
+  .objects[data-mode='index'] .o-title { grid-column: 3; font-family: var(--font-display); font-size: clamp(1.6rem, 3.5vw, 2.6rem); line-height: 1.1; }
+  .objects[data-mode='index'] .o-kicker { grid-column: 4; text-align: right; }
+  .objects[data-mode='index'] .o-arrow { grid-column: 5; font-size: 1.3rem; transition: transform var(--dur) var(--ease-out); }
+  .objects[data-mode='index'] .o a:hover .o-title { color: var(--accent); }
+  .objects[data-mode='index'] .o a:hover .o-arrow { transform: translateX(6px); }
+  @media (max-width: 700px) {
+    .objects[data-mode='index'] .o a { grid-template-columns: 48px 1fr 24px; row-gap: 0; }
+    .objects[data-mode='index'] .o-art { grid-column: 1; grid-row: 1 / span 2; width: 48px; }
+    .objects[data-mode='index'] .o-num { display: none; }
+    .objects[data-mode='index'] .o-title { grid-column: 2; grid-row: 1; }
+    .objects[data-mode='index'] .o-kicker { grid-column: 2; grid-row: 2; text-align: left; }
+    .objects[data-mode='index'] .o-arrow { grid-column: 3; grid-row: 1 / span 2; }
+  }
+</style>

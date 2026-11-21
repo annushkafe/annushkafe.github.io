@@ -1,0 +1,102 @@
+---
+import Base from '../layouts/Base.astro';
+import { Image } from 'astro:assets';
+import portrait from '../assets/portrait.jpg';
+import { site } from '../data/site';
+import { experience, education, certifications, capabilities, tools, volunteering } from '../data/cv';
+---
+<Base title="About" current="about">
+  <section class="wrap about-hero">
+    <figure class="portrait">
+      <Image src={portrait} alt="Portrait of Annushka smiling over her shoulder at dusk" widths={[300, 440]} sizes="(max-width: 800px) 280px, 340px" loading="eager" />
+    </figure>
+    <div>
+      <p class="label">About</p>
+      <h1>I build worlds people want to <em>step into.</em></h1>
+      <p class="lede">{site.intro}</p>
+      <p>
+        I trained as a psychologist, with a BA in Psychology, English and Journalism and then an MSc in Applied Psychology in Fashion at London College of Fashion. Since then I’ve moved between research and making: UX and strategy for luxury retail at Holition, 3D body-scanning with Aistetic, brand books, digital-identity research, and now directing and styling FMCG content.
+      </p>
+      <p>
+        I’m drawn to the space between people and the things they wear, buy and become online, and to speculative design that imagines where that relationship goes next.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap cv">
+    <div class="cv-col">
+      <h2>Experience</h2>
+      <ol class="xp">
+        {experience.map((x) => (
+          <li>
+            <p class="label">{x.when}{x.place && ` · ${x.place}`}</p>
+            <h3>{x.role} <span class="org">· {x.org}</span></h3>
+            <ul>{x.points.map((pt) => <li>{pt}</li>)}</ul>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <aside class="cv-side">
+      <div>
+        <h2 class="side-h">Capabilities</h2>
+        <ol class="caps">{capabilities.map((c, i) => <li><span class="label">{String(i + 1).padStart(2, '0')}</span>{c}</li>)}</ol>
+      </div>
+      <div>
+        <h2 class="side-h">Tools</h2>
+        <ul class="chips">{tools.map((t) => <li>{t}</li>)}</ul>
+      </div>
+      <div>
+        <h2 class="side-h">Education</h2>
+        {education.map((e) => (
+          <div class="edu">
+            <p class="label">{e.when}</p>
+            <h3>{e.title}</h3>
+            <p class="org">{e.org}</p>
+            <p class="note">{e.note}</p>
+          </div>
+        ))}
+      </div>
+      <div>
+        <h2 class="side-h">Certifications</h2>
+        <ul class="plain">{certifications.map((c) => <li><span>{c.title}</span><span class="label">{c.when}</span><span class="note">{c.note}</span></li>)}</ul>
+      </div>
+      <div>
+        <h2 class="side-h">Volunteering</h2>
+        <ul class="plain">{volunteering.map((v) => <li><span>{v.title}</span><span class="note">{v.note}</span></li>)}</ul>
+      </div>
+    </aside>
+  </section>
+</Base>
+
+<style>
+  .about-hero { display: grid; grid-template-columns: minmax(220px, 380px) 1fr; gap: var(--space-8); padding-top: var(--space-7); padding-bottom: var(--space-9); align-items: start; }
+  .about-hero h1 { font-size: clamp(2.75rem, 6vw, 5.25rem); margin: var(--space-3) 0 var(--space-6); }
+  .about-hero h1 em { color: var(--accent); }
+  .portrait { margin: 0; position: relative; }
+  .portrait img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border: 1px solid var(--flash-ink); padding: 8px; background: var(--surface); transform: rotate(-1.5deg); }
+  .portrait { max-width: 340px; }
+  @media (max-width: 800px) { .about-hero { grid-template-columns: 1fr; gap: var(--space-6); } .portrait { max-width: 280px; } }
+
+  .cv { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--space-8); border-top: 1px solid var(--ink); padding-top: var(--space-7); }
+  .cv h2 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: var(--space-6); }
+  .xp { list-style: none; padding: 0; margin: 0; }
+  .xp > li { padding: var(--space-5) 0; border-bottom: 1px solid var(--line); }
+  .xp h3 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); margin: var(--space-2) 0 var(--space-3); }
+  .org { color: var(--muted); }
+  .xp ul { margin: 0; padding-left: 1.1em; color: var(--ink-soft); display: grid; gap: var(--space-2); }
+  .cv-side { display: grid; gap: var(--space-7); align-content: start; }
+  .side-h { font-size: 1.75rem !important; margin-bottom: var(--space-4) !important; }
+  .caps { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--ink); }
+  .caps li { display: grid; grid-template-columns: 36px 1fr; padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+  .chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .chips li { border: 1px solid var(--ink); border-radius: 999px; padding: 2px var(--space-3); font-size: 0.9rem; }
+  .edu { padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+  .edu h3 { font-size: 1.4rem; margin: var(--space-1) 0; }
+  .edu .org, .edu .note { margin: 0 0 var(--space-2); font-size: 0.95rem; }
+  .edu .note { color: var(--ink-soft); }
+  .plain { list-style: none; padding: 0; margin: 0; }
+  .plain li { display: grid; gap: 2px; padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+  .plain .note { margin-top: var(--space-2); color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; max-width: 60ch; }
+  @media (max-width: 900px) { .cv { grid-template-columns: 1fr; gap: var(--space-7); } }
+</style>

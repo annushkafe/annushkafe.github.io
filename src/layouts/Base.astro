@@ -1,0 +1,142 @@
+---
+import '../styles/global.css';
+import FlashDefs from '../components/FlashDefs.astro';
+import { site } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  current?: 'home' | 'work' | 'about' | 'contact' | 'none';
+}
+const { title, description = site.description, current = 'none' } = Astro.props;
+const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.role}`;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem('theme'); } catch (e) {}
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body>
+    <FlashDefs />
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="wash" aria-hidden="true"><span></span><span></span></div>
+
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-name">{site.name}</span>
+        <span class="label brand-role">{site.role}</span>
+      </a>
+      <nav aria-label="Main">
+        <ul>
+          <li><a href="/#top" aria-current={current === 'home' ? 'page' : undefined}>Home</a></li>
+          <li><a href="/#world" aria-current={current === 'work' ? 'page' : undefined}>Work</a></li>
+          <li><a href="/about" aria-current={current === 'about' ? 'page' : undefined}>About</a></li>
+          <li><a href="/contact" aria-current={current === 'contact' ? 'page' : undefined}>Contact</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" type="button" aria-label="Switch colour mode">
+        <span class="label" data-when="light">Archive</span>
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-dot"></span></span>
+        <span class="label" data-when="dark">Speculative</span>
+      </button>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <p class="display footer-line">Let&rsquo;s build a world <em>together.</em></p>
+        <ul class="footer-links">
+          <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+          <li><a href={site.linkedin} rel="me noopener" target="_blank">LinkedIn</a></li>
+          <li><a href={site.instagram} rel="me noopener" target="_blank">Instagram</a></li>
+        </ul>
+      </div>
+    </footer>
+
+    <script>
+      const root = document.documentElement;
+      const btn = document.querySelector<HTMLButtonElement>('.theme-toggle');
+      const sync = () => btn?.setAttribute('aria-pressed', String(root.dataset.theme === 'dark'));
+      sync();
+      btn?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+        sync();
+      });
+    </script>
+
+    <style>
+      .site-header {
+        position: sticky; top: 0; z-index: var(--z-header);
+        display: flex; align-items: center; gap: var(--space-5);
+        padding: var(--space-4) var(--space-5);
+        background: color-mix(in srgb, var(--paper) 82%, transparent);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .brand { display: flex; align-items: baseline; gap: var(--space-3); text-decoration: none; margin-right: auto; }
+      .brand-name { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; }
+      nav ul { display: flex; gap: var(--space-5); list-style: none; margin: 0; padding: 0; }
+      nav a {
+        font-size: 0.95rem; text-decoration: none; padding: var(--space-2) 0;
+        background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+        transition: background-size var(--dur) var(--ease-out);
+      }
+      nav a:hover, nav a[aria-current='page'] { background-size: 100% 1px; }
+
+      .theme-toggle {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        background: none; border: 0; color: inherit; cursor: pointer;
+        min-height: 44px; padding: 0 var(--space-1);
+      }
+      .theme-toggle .label { transition: color var(--dur-fast); }
+      :root[data-theme='dark'] .theme-toggle [data-when='light'],
+      :root:not([data-theme='dark']) .theme-toggle [data-when='dark'] { opacity: 0.55; }
+      :root[data-theme='dark'] .theme-toggle [data-when='dark'],
+      :root:not([data-theme='dark']) .theme-toggle [data-when='light'] { color: var(--ink); }
+      /* Soft UI switch: a pressed-in track with a raised knob. */
+      .toggle-track { width: 46px; height: 24px; border-radius: 999px; position: relative; background: var(--paper); box-shadow: var(--neu-inset); }
+      .toggle-dot {
+        position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+        background: var(--paper); box-shadow: 2px 2px 5px var(--neu-lo), -2px -2px 5px var(--neu-hi);
+        transition: transform var(--dur) var(--ease-out), background-color var(--dur);
+      }
+      .toggle-dot::after { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--ink); transition: background-color var(--dur); }
+      :root[data-theme='dark'] .toggle-dot { transform: translateX(22px); }
+      :root[data-theme='dark'] .toggle-dot::after { background: var(--accent); }
+
+      @media (max-width: 760px) {
+        .site-header { flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-4); }
+        .brand-role { display: none; }
+        nav { order: 3; width: 100%; }
+        nav ul { gap: var(--space-5); }
+        .theme-toggle [data-when] { display: none; }
+      }
+
+      main:focus { outline: none; }
+
+      .site-footer { padding: var(--space-10) 0 var(--space-6); border-top: 1px solid var(--line); margin-top: var(--space-10); }
+      .footer-line { font-size: clamp(2.5rem, 7vw, 5.5rem); margin: 0 0 var(--space-6); max-width: none; }
+      .footer-links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); list-style: none; padding: 0; margin: 0 0 var(--space-7); }
+      .footer-links a { display: inline-block; padding: var(--space-2) 0; font-size: 1.05rem; text-underline-offset: 4px; overflow-wrap: anywhere; }
+      .footer-links a:hover { color: var(--accent); }
+      .footer-meta { display: flex; gap: var(--space-2); margin: 0; }
+    </style>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+import ObjectArt from '../components/ObjectArt.astro';
+import { site } from '../data/site';
+
+const handle = '@' + site.instagram.replace(/\/$/, '').split('/').pop();
+---
+<Base title="Contact" current="contact">
+  <section class="wrap contact">
+    <div class="c-art"><ObjectArt name="envelope" /></div>
+    <div class="c-body">
+      <p class="label">Contact</p>
+      <h1>Tell me about your <em>world.</em></h1>
+      <p class="lede">
+        Campaigns, brand worlds, styling, research or something that doesn&rsquo;t have a name yet. Tell me what you&rsquo;re dreaming up and I&rsquo;ll get back to you.
+      </p>
+
+      <ul class="channels">
+        <li>
+          <span class="label">Email</span>
+          <span class="row">
+            <a class="big" href={`mailto:${site.email}`}>{site.email}</a>
+            <button type="button" class="copy neu" data-copy={site.email}>Copy</button>
+          </span>
+        </li>
+        <li>
+          <span class="label">LinkedIn</span>
+          <a class="big" href={site.linkedin} rel="me noopener" target="_blank">Annushka Ebenazar <span aria-hidden="true">↗</span></a>
+        </li>
+        <li>
+          <span class="label">Instagram</span>
+          <a class="big" href={site.instagram} rel="me noopener" target="_blank">{handle} <span aria-hidden="true">↗</span></a>
+        </li>
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.copy').forEach((b) => {
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy ?? '');
+        b.textContent = 'Copied';
+      } catch (e) {
+        b.textContent = 'Select & copy';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+  });
+</script>
+
+<style>
+  .contact {
+    display: grid; grid-template-columns: minmax(160px, 280px) 1fr; gap: var(--space-8);
+    align-items: center; padding-top: var(--space-8); padding-bottom: var(--space-9, 8rem); min-height: calc(100dvh - 260px);
+  }
+  .c-art { transform: rotate(-4deg); }
+  h1 { font-size: clamp(2.6rem, 6vw, 5rem); margin: var(--space-3) 0 var(--space-5); }
+  h1 em { font-family: var(--font-script); font-style: normal; color: var(--flash-red); font-size: 1.15em; }
+  .channels { list-style: none; padding: 0; margin: var(--space-7) 0 0; border-top: 1px solid var(--ink); }
+  .channels li { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid var(--line); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .big { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 2.1rem); line-height: 1.15; text-decoration: none; overflow-wrap: anywhere; }
+  .big:hover { color: var(--accent); }
+  .copy { min-height: 36px; padding: 0 var(--space-4); font-size: 0.85rem; }
+  @media (max-width: 760px) {
+    .contact { grid-template-columns: 1fr; gap: var(--space-5); padding-top: var(--space-6); min-height: auto; }
+    .c-art { width: 150px; }
+    .channels li { grid-template-columns: 1fr; gap: var(--space-1); }
+  }
+</style>

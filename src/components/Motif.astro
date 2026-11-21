@@ -1,0 +1,67 @@
+---
+// Reusable tattoo-flash motifs, drawn around their own origin.
+// Must be rendered inside an ObjectArt <svg class="obj"> so its line/fill classes apply.
+interface Props {
+  name: 'rose' | 'leaf' | 'dagger' | 'flame' | 'swallow';
+  x?: number; y?: number; s?: number; r?: number; flip?: boolean;
+}
+const { name, x = 0, y = 0, s = 1, r = 0, flip = false } = Astro.props;
+const transform = `translate(${x} ${y}) rotate(${r}) scale(${flip ? -s : s} ${s})`;
+---
+<g transform={transform}>
+  {name === 'rose' && (
+    <g>
+      <path class="red ln" d="M-15 2 C-17 -9 -8 -16 0 -14 C8 -16 17 -9 15 2 C13 11 7 15 0 15 C-7 15 -13 11 -15 2Z" />
+      <path class="solid" d="M-13 3 C-8 11 8 11 13 3 C9 8 -9 8 -13 3Z" />
+      <path class="hd" d="M4 -3 C8 -6 12 -4 12 0 C8 2 6 1 4 -3Z" />
+      <path class="ln" d="M-11 -1 C-7 5 7 5 11 -1" />
+      <path class="ln" d="M-4 -3 C-2 -9 6 -8 5 -3 C4 1 -2 1 -2 -2 C-2 -4 1 -5 2 -3" />
+      <path class="ln" d="M-9 -9 C-5 -5 -3 -9 0 -13" />
+      <path class="ln" d="M9 -9 C5 -6 4 -9 2 -13" />
+      <path class="ln-t" d="M-14 6 C-8 14 8 14 14 6" />
+      <path class="pp-ln" d="M-9 -3 C-7 0 -5 1 -3 2" />
+    </g>
+  )}
+  {name === 'leaf' && (
+    <g>
+      <path class="pp ln" d="M0 0 C6 -7 16 -7 22 0 C16 7 6 7 0 0Z" />
+      <path class="solid" d="M0 0 C6 7 16 7 22 0 C16 2 6 2 0 0Z" />
+      <path class="ln-t" d="M1 0 L20 0 M6 0 l4 -4 M11 0 l4 -4" />
+    </g>
+  )}
+  {name === 'dagger' && (
+    <g>
+      <path class="pp ln" d="M-6 -8 L6 -8 L0 60Z" />
+      <path class="solid" d="M0 -8 L6 -8 L0 60Z" />
+      <path class="ln-t" d="M-2 -5 L-0.5 40" />
+      <rect class="solid" x="-3.6" y="-36" width="7.2" height="23" rx="1.5" />
+      <path class="pp-ln" d="M-3 -31 l6 -2 M-3 -26 l6 -2 M-3 -21 l6 -2 M-3 -16 l6 -2" />
+      <path class="pp ln" d="M-18 -14 C-12 -10 -6 -13 0 -13 C6 -13 12 -10 18 -14 C16 -8 10 -8 6 -8 L-6 -8 C-10 -8 -16 -8 -18 -14Z" />
+      <path class="h" d="M0 -13 C6 -13 12 -10 18 -14 C16 -8 10 -8 6 -8 L0 -8Z" />
+      <circle class="solid" cx="-18" cy="-14" r="2.6" />
+      <circle class="solid" cx="18" cy="-14" r="2.6" />
+      <circle class="solid" cx="0" cy="-40" r="4.2" />
+      <circle class="pp" cx="-1.3" cy="-41.4" r="1.2" />
+      <path class="red" d="M0 62 c3 5 4 8 0 9 c-4 -1 -3 -4 0 -9z" />
+    </g>
+  )}
+  {name === 'flame' && (
+    <g>
+      <path class="red ln" d="M0 0 C-12 -4 -12 -18 -4 -30 C-4 -20 2 -18 2 -10 C6 -14 8 -20 6 -26 C14 -16 12 -2 0 0Z" />
+      <path class="solid" d="M0 -2 C-5 -4 -5 -10 -2 -15 C-1 -10 2 -8 3 -5 C4 -4 2 -2 0 -2Z" />
+    </g>
+  )}
+  {name === 'swallow' && (
+    <g>
+      <path class="solid ln" d="M2 -2 C-2 -14 -14 -24 -30 -26 C-24 -20 -20 -16 -16 -12 L-20 -11 C-14 -8 -6 -4 2 -2Z" />
+      <path class="pp-ln" d="M-22 -21 L-9 -8 M-15 -19 L-4 -6" />
+      <path class="solid ln" d="M2 2 C-4 12 -16 20 -30 21 C-24 16 -20 12 -16 9 L-20 8 C-14 6 -6 4 2 2Z" />
+      <path class="pp-ln" d="M-22 17 L-9 6" />
+      <path class="solid ln" d="M-6 0 L-28 -7 L-18 0 L-28 7Z" />
+      <path class="pp ln" d="M-8 0 C-2 -6 10 -7 18 -4 L26 -3 L19 0 C12 5 0 6 -8 0Z" />
+      <path class="solid" d="M-8 0 C-2 -6 10 -7 18 -4 L20 -2 C12 -3 2 -3 -8 0Z" />
+      <path class="red" d="M14 -2 C18 -1 19 1 15 2.5 C12 2.5 11 0 14 -2Z" />
+      <circle class="pp" cx="16" cy="-4" r="1" />
+    </g>
+  )}
+</g>

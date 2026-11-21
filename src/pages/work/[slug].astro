@@ -1,0 +1,346 @@
+---
+import Base from '../../layouts/Base.astro';
+import ObjectArt from '../../components/ObjectArt.astro';
+import Diagram from '../../components/Diagram.astro';
+import WorkImage from '../../components/WorkImage.astro';
+import { projects, tagLabels, type Project } from '../../data/projects';
+
+export function getStaticPaths() {
+  return projects.map((project, i) => ({
+    params: { slug: project.slug },
+    props: { project, next: projects[(i + 1) % projects.length] },
+  }));
+}
+
+interface Props { project: Project; next: Project }
+const { project: p, next } = Astro.props;
+---
+<Base title={p.shortTitle} description={p.summary} current="work">
+  <article>
+    <header class="wrap p-hero">
+      <a class="back label" href="/#world">← Back to the world</a>
+      <div class="p-hero-grid">
+        <div>
+          <p class="label">{p.kicker}{p.year && ` · ${p.year}`}</p>
+          <h1 class="p-title">{p.title}</h1>
+          <p class="lede">{p.summary}</p>
+          <ul class="p-tags">{p.tags.map((t) => <li><a href={`/?filter=${t}#world`}>{tagLabels[t]}</a></li>)}</ul>
+        </div>
+        <div class="p-object"><ObjectArt name={p.object} /></div>
+      </div>
+      {p.facts && (
+        <dl class="p-facts">
+          {p.client && <div><dt class="label">Context</dt><dd>{p.client}</dd></div>}
+          {p.facts.map((f) => <div><dt class="label">{f.label}</dt><dd>{f.value}</dd></div>)}
+        </dl>
+      )}
+      {p.status === 'in-progress' && <p class="status label">Work in progress. Visuals coming soon</p>}
+    </header>
+
+    <div class="blocks">
+      {p.blocks.map((b, bi) => (
+        <section class:list={['block', `block-${b.type}`, b.type === 'images' && `layout-${b.layout ?? 'grid'}`, b.type === 'images' && b.phone && 'is-phone']}>
+          {b.type === 'text' && (
+            <div class="narrow">
+              {b.heading && <h2>{b.heading}</h2>}
+              {b.body.map((t) => <p>{t}</p>)}
+            </div>
+          )}
+
+          {b.type === 'numbered' && (
+            <div class="wrap numbered">
+              <div class="numbered-head">
+                {b.heading && <h2>{b.heading}</h2>}
+                {b.intro && <p class="lede">{b.intro}</p>}
+              </div>
+              <ol>
+                {b.items.map((it, i) => (
+                  <li>
+                    <span class="label n">{String(i + 1).padStart(2, '0')}</span>
+                    <h3>{it.title}</h3>
+                    <p>{it.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {b.type === 'quote' && (
+            <blockquote class="wrap quote">
+              <p class="display">“{b.text}”</p>
+              {b.by && <footer class="label">{b.by}</footer>}
+            </blockquote>
+          )}
+
+          {b.type === 'stats' && (
+            <div class="wrap">
+              {b.heading && <h2 class="sec-h">{b.heading}</h2>}
+              <ul class="stats">
+                {b.items.map((s) => <li><span class="stat-v display">{s.value}</span><span class="stat-l">{s.label}</span></li>)}
+              </ul>
+            </div>
+          )}
+
+          {b.type === 'diagram' && (
+            <div class="wrap">
+              {(b.heading || b.intro) && (
+                <div class="sec-intro">
+                  {b.heading && <h2>{b.heading}</h2>}
+                  {b.intro && <p class="lede">{b.intro}</p>}
+                </div>
+              )}
+              <Diagram diagram={b.diagram} label={b.heading} />
+            </div>
+          )}
+
+          {b.type === 'reels' && (
+            <div class="wrap">
+              {(b.heading || b.intro) && (
+                <div class="sec-intro">
+                  {b.heading && <h2>{b.heading}</h2>}
+                  {b.intro && <p class="lede">{b.intro}</p>}
+                </div>
+              )}
+              <div class="carousel" role="region" aria-roledescription="carousel" aria-label={b.heading ?? 'Reels'}>
+                <ul class="track reels" tabindex="0">
+                  {b.reels.map((r, ri) => (
+                    <li aria-roledescription="slide" aria-label={`${ri + 1} of ${b.reels.length}: ${r.title}`}>
+                      <figure class="reel">
+                        <div class="reel-frame">
+                          <video src={`/${r.src}#t=0.6`} muted loop playsinline preload="metadata" aria-label={r.alt} data-reel></video>
+                        </div>
+                        <figcaption>
+                          <span class="reel-text"><span class="reel-title">{r.title}</span>{r.meta && <span class="label">{r.meta}</span>}</span>
+                          <button type="button" class="reel-sound neu" aria-pressed="false" data-sound>
+                            <span class="visually-hidden">Sound for {r.title}</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z" /><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /><path class="off" d="M17 9.5l5 5M22 9.5l-5 5" /></svg>
+                          </button>
+                        </figcaption>
+                      </figure>
+                    </li>
+                  ))}
+                </ul>
+                <div class="c-ctrl">
+                  <button type="button" class="c-btn neu" data-dir="-1" aria-label="Previous reel">←</button>
+                  <span class="label c-count" aria-live="polite"><span data-cur>01</span> / {String(b.reels.length).padStart(2, '0')}</span>
+                  <button type="button" class="c-btn neu" data-dir="1" aria-label="Next reel">→</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {b.type === 'images' && (
+            <div class="wrap">
+              {(b.heading || b.intro) && (
+                <div class="sec-intro">
+                  {b.heading && <h2>{b.heading}</h2>}
+                  {b.intro && <p class="lede">{b.intro}</p>}
+                </div>
+              )}
+              {b.layout === 'carousel' ? (
+                <div class="carousel" role="region" aria-roledescription="carousel" aria-label={b.heading ?? 'Photo series'}>
+                  <ul class="gallery track" tabindex="0">
+                    {b.images.map((img, ii) => (
+                      <li aria-roledescription="slide" aria-label={`${ii + 1} of ${b.images.length}`}>
+                        <figure>
+                          <WorkImage src={img.src} alt={img.alt} eager={bi === 0 && ii < 3} />
+                        </figure>
+                      </li>
+                    ))}
+                  </ul>
+                  <div class="c-ctrl">
+                    <button type="button" class="c-btn neu" data-dir="-1" aria-label="Previous photo">←</button>
+                    <span class="label c-count" aria-live="polite"><span data-cur>01</span> / {String(b.images.length).padStart(2, '0')}</span>
+                    <button type="button" class="c-btn neu" data-dir="1" aria-label="Next photo">→</button>
+                  </div>
+                </div>
+              ) : (
+                <ul class="gallery">
+                  {b.images.map((img) => (
+                    <li>
+                      <figure>
+                        <WorkImage src={img.src} alt={img.alt} eager={bi === 0} />
+                        {img.caption && <figcaption class="label">{img.caption}</figcaption>}
+                      </figure>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      ))}
+    </div>
+
+    <nav class="wrap next" aria-label="Next project">
+      <a href={`/work/${next.slug}`}>
+        <span class="label">Next world</span>
+        <span class="next-title display">{next.shortTitle} <span aria-hidden="true">→</span></span>
+        <span class="next-obj"><ObjectArt name={next.object} /></span>
+      </a>
+    </nav>
+  </article>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.carousel').forEach((c) => {
+    const track = c.querySelector<HTMLUListElement>('.track')!;
+    const slides = [...track.children] as HTMLElement[];
+    const cur = c.querySelector('[data-cur]')!;
+    const [prev, next] = c.querySelectorAll<HTMLButtonElement>('.c-btn');
+    const index = () => {
+      const left = track.scrollLeft + 4;
+      let i = 0;
+      slides.forEach((s, n) => { if (s.offsetLeft - track.offsetLeft <= left) i = n; });
+      return i;
+    };
+    const update = () => {
+      const i = index();
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      cur.textContent = String(atEnd ? slides.length : i + 1).padStart(2, '0');
+      prev.disabled = track.scrollLeft <= 4;
+      next.disabled = atEnd;
+    };
+    const go = (dir: number) => {
+      const i = Math.min(slides.length - 1, Math.max(0, index() + dir));
+      track.scrollTo({ left: slides[i].offsetLeft - track.offsetLeft });
+    };
+    prev.addEventListener('click', () => go(-1));
+    next.addEventListener('click', () => go(1));
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    });
+    track.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    update();
+  });
+
+  // Reels: play muted while on screen, pause when scrolled away. One reel has sound at a time.
+  const reels = [...document.querySelectorAll<HTMLVideoElement>('[data-reel]')];
+  if (reels.length) {
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const soundBtn = (v: HTMLVideoElement) => v.closest('.reel')!.querySelector<HTMLButtonElement>('[data-sound]')!;
+    const setSound = (v: HTMLVideoElement, on: boolean) => { v.muted = !on; soundBtn(v).setAttribute('aria-pressed', String(on)); };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        const v = e.target as HTMLVideoElement;
+        if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+          if (!still || !v.muted) v.play().catch(() => {});
+        } else {
+          v.pause();
+          if (!v.muted) setSound(v, false);
+        }
+      });
+    }, { threshold: [0, 0.5, 1] });
+    reels.forEach((v) => {
+      io.observe(v);
+      soundBtn(v).addEventListener('click', () => {
+        const on = v.muted;
+        reels.forEach((o) => { if (o !== v && !o.muted) setSound(o, false); });
+        setSound(v, on);
+        if (on) v.play().catch(() => {});
+      });
+      // Tapping the video itself plays or pauses it.
+      v.addEventListener('click', () => { if (v.paused) v.play().catch(() => {}); else v.pause(); });
+    });
+  }
+</script>
+
+<style>
+  .p-hero { padding-top: var(--space-6); padding-bottom: var(--space-8); }
+  .back { display: inline-block; text-decoration: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }
+  .back:hover { color: var(--accent); }
+  .p-hero-grid { display: grid; grid-template-columns: 1fr minmax(180px, 300px); gap: var(--space-7); align-items: center; }
+  .p-title { font-size: clamp(2.75rem, 7vw, 6rem); margin: var(--space-3) 0 var(--space-5); }
+  .p-object { animation: float 7s ease-in-out infinite alternate; }
+  @keyframes float { to { transform: translateY(-10px) rotate(-3deg); } }
+  .p-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; padding: 0; margin: var(--space-5) 0 0; }
+  .p-tags a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--ink); border-radius: 999px; font-size: 0.85rem; text-decoration: none; }
+  .p-tags a:hover { background: var(--ink); color: var(--paper); }
+  .p-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-5); margin: var(--space-8) 0 0; padding-top: var(--space-5); border-top: 1px solid var(--line); }
+  .p-facts dd { margin: var(--space-1) 0 0; }
+  .status { margin-top: var(--space-5); color: var(--accent); }
+  @media (max-width: 760px) {
+    .p-hero-grid { grid-template-columns: 1fr; gap: var(--space-5); }
+    .p-object { order: -1; width: 140px; }
+  }
+
+  .block { padding: var(--space-8) 0; }
+  .block h2 { margin-bottom: var(--space-5); }
+  .sec-intro { max-width: 760px; margin-bottom: var(--space-7); }
+  .sec-intro h2 { margin-bottom: var(--space-4); }
+  .sec-h { margin-bottom: var(--space-6) !important; }
+
+  .numbered { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-7); }
+  .numbered ol { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--ink); }
+  .numbered li { display: grid; grid-template-columns: 48px 1fr; column-gap: var(--space-4); padding: var(--space-5) 0; border-bottom: 1px solid var(--line); }
+  .numbered li .n { padding-top: 0.5rem; }
+  .numbered li h3 { grid-column: 2; margin-bottom: var(--space-2); }
+  .numbered li p { grid-column: 2; margin: 0; color: var(--ink-soft); }
+  @media (max-width: 860px) { .numbered { grid-template-columns: 1fr; gap: var(--space-4); } }
+
+  .quote { margin: 0 auto; padding: var(--space-6) 0; border-block: 1px solid var(--ink); }
+  .quote p { font-size: clamp(1.8rem, 4vw, 3.2rem); line-height: 1.1; max-width: 26ch; margin-bottom: var(--space-4); }
+
+  .stats { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-5); }
+  .stats li { border-top: 1px solid var(--ink); padding-top: var(--space-4); display: grid; gap: var(--space-3); }
+  .stat-v { font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1; color: var(--accent); }
+  .stat-l { color: var(--ink-soft); max-width: 32ch; }
+
+  .gallery { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-4); }
+  .gallery figure { margin: 0; }
+  .gallery img { width: 100%; border: 1px solid var(--line); background: var(--surface); }
+  .gallery figcaption { margin-top: var(--space-2); }
+  .layout-grid .gallery { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .layout-pair .gallery { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .layout-pair .gallery li:only-child { max-width: 420px; }
+  .layout-deck .gallery { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .layout-wide .gallery { grid-template-columns: 1fr; }
+  .layout-phones .gallery { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-5); }
+  .layout-phones .gallery img { border-radius: 18px; border: 1px solid var(--ink); }
+  .layout-phones figcaption { text-align: center; }
+
+  /* Carousel: a strip of photos you can swipe, scroll or step through. */
+  .carousel { position: relative; }
+  .track {
+    display: flex; gap: var(--space-4); overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    overscroll-behavior-x: contain; scrollbar-width: none; padding-bottom: var(--space-2);
+  }
+  .track::-webkit-scrollbar { display: none; }
+  .track:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .track li { flex: 0 0 auto; scroll-snap-align: start; height: clamp(300px, 62vh, 560px); }
+  .track figure { height: 100%; }
+  .track :global(img) { height: 100%; width: auto; max-width: 86vw; object-fit: cover; }
+  .c-ctrl { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); }
+  .c-btn { width: 46px; height: 46px; font-size: 1.1rem; }
+  .c-count { min-width: 6ch; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { .track { scroll-behavior: auto; } }
+
+  /* Phone screenshots: rounded like a handset screen. */
+  .is-phone .track :global(img) { border-radius: 22px; border: 1px solid var(--ink); }
+
+  /* Reels: phone-shaped video frames in the same swipeable strip. */
+  .reels { list-style: none; padding: 0; margin: 0; }
+  .reels li { height: auto; }
+  /* Frame matches the reels' own 4:9 shape so nothing is cropped off the top or bottom. */
+  .reel { margin: 0; width: min(clamp(200px, 22vw, 250px), calc((100svh - 200px) * 4 / 9)); min-width: 150px; }
+  .reel-frame { position: relative; aspect-ratio: 4 / 9; border-radius: 22px; overflow: hidden; border: 1px solid var(--ink); background: var(--surface); }
+  .reel-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+  .reel-sound { position: relative; flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; }
+  .reel-sound svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .reel-sound .spk { fill: currentColor; }
+  .reel-sound .on, .reel-sound[aria-pressed='true'] .off { display: none; }
+  .reel-sound[aria-pressed='true'] .on { display: inline; }
+  .reel figcaption { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); }
+  .reel-text { display: grid; gap: var(--space-1); min-width: 0; }
+  .reel-title { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.1; }
+  @media (max-width: 760px) { .reel { width: min(62vw, calc((100svh - 200px) * 4 / 9)); } }
+
+  .next { margin-top: var(--space-8); }
+  .next a { display: grid; grid-template-columns: 1fr 140px; align-items: center; gap: var(--space-2) var(--space-6); padding: var(--space-7) 0; border-top: 1px solid var(--ink); text-decoration: none; }
+  .next .label { grid-column: 1; }
+  .next-title { grid-column: 1; font-size: clamp(2.5rem, 7vw, 6rem); transition: color var(--dur-fast); }
+  .next-obj { grid-column: 2; grid-row: 1 / span 2; transition: transform var(--dur) var(--ease-out); }
+  .next a:hover .next-title { color: var(--accent); }
+  .next a:hover .next-obj { transform: rotate(-6deg) scale(1.05); }
+</style>

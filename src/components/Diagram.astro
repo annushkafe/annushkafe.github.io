@@ -1,0 +1,301 @@
+---
+// Recreations of the original research diagrams in the site's visual language.
+// Built from real text (not images) so they stay sharp, themeable and accessible.
+import type { Diagram } from '../data/projects';
+
+interface Props { diagram: Diagram; label?: string }
+const { diagram: d, label } = Astro.props;
+
+// Bubble map: place nodes on an ellipse around the centre.
+const bubbleNodes = d.kind === 'bubbles'
+  ? d.nodes.map((text, i, all) => {
+      const a = (i / all.length) * Math.PI * 2 - Math.PI / 2;
+      return { text, x: 50 + Math.cos(a) * 38, y: 50 + Math.sin(a) * 38 };
+    })
+  : [];
+
+const conceptById = d.kind === 'concepts' ? Object.fromEntries(d.nodes.map((n) => [n.id, n])) : {};
+---
+<figure class:list={['dg', `dg-${d.kind}`]} aria-label={label}>
+
+  {d.kind === 'bubbles' && (
+    <div class="bubbles">
+      <div class="bubble-center"><span>{d.center}</span></div>
+      <svg class="bubble-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {bubbleNodes.map((n) => <line x1="50" y1="50" x2={n.x} y2={n.y} />)}
+      </svg>
+      <ul>
+        {bubbleNodes.map((n, i) => (
+          <li style={`--x:${n.x}%; --y:${n.y}%; --i:${i}`}><span>{n.text}</span></li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {d.kind === 'flow' && (
+    <div class="flow" style={`--n:${d.steps.length}`}>
+      <ol class="flow-main">
+        {d.steps.map((s, i) => (
+          <li class:list={{ 'is-pivot': d.branch?.after === i }}><span class="flow-num label">{String(i + 1).padStart(2, '0')}</span><span class="flow-text">{s}</span></li>
+        ))}
+      </ol>
+      {d.branch && (
+        <div class="flow-branch" style={`--from:${d.branch.after + 1}; --to:${d.branch.joinsAt + 2}`}>
+          <span class="flow-branch-node"><span class="label">Optional detour</span>{d.branch.label}</span>
+        </div>
+      )}
+    </div>
+  )}
+
+  {d.kind === 'steps' && (
+    <ol class="steps" style={`--n:${d.steps.length}`}>
+      {d.steps.map((s, i) => (
+        <li><span class="step-dot">{i + 1}</span><span class="step-text">{s}</span></li>
+      ))}
+    </ol>
+  )}
+
+  {d.kind === 'phases' && (
+    <ol class="phases">
+      {d.phases.map((p, i) => (
+        <li class:list={['phase', { 'phase-dark': i % 2 === 1 }]}>
+          <span class="label">Phase {String(i + 1).padStart(2, '0')}</span>
+          <h3>{p.title}</h3>
+          <ul>{p.items.map((it) => <li>{it}</li>)}</ul>
+        </li>
+      ))}
+    </ol>
+  )}
+
+  {d.kind === 'themes' && (
+    <ul class="themes">
+      {d.items.map((t, i) => (
+        <li>
+          <div class="theme-circle"><span class="label">{String(i + 1).padStart(2, '0')}</span><span class="theme-title">{t.title}</span></div>
+          {t.body && <p>{t.body}</p>}
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {d.kind === 'journey' && (
+    <div class="journey" style={`--n:${d.stages.length}; --rows:${d.rows.length + 1}`}>
+      {d.stages.map((stage, si) => (
+        <section class="journey-stage" aria-label={stage}>
+          <h3><span class="label">{String(si + 1).padStart(2, '0')}</span>{stage}</h3>
+          {d.rows.map((row) => (
+            <div class="journey-cell">
+              <span class="label">{row.label}</span>
+              {row.label === 'Feelings'
+                ? <ul class="chips">{row.cells[si].map((c) => <li>{c}</li>)}</ul>
+                : <ul class="journey-list">{row.cells[si].map((c) => <li>{c}</li>)}</ul>}
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  )}
+
+  {d.kind === 'split-flow' && (
+    <div class="split">
+      <ol class="split-seq">{d.before.map((s) => <li>{s}</li>)}</ol>
+      <div class="split-q"><span>{d.question}</span></div>
+      <ul class="split-groups">
+        {d.groups.map((g) => <li><h3>{g.title}</h3><p>{g.body}</p></li>)}
+      </ul>
+      <ol class="split-seq split-after">{d.after.map((s) => <li>{s}</li>)}</ol>
+    </div>
+  )}
+
+  {d.kind === 'concepts' && (
+    <div class="concepts">
+      <svg viewBox="0 0 100 90" role="img" aria-label={`Concept map of ${d.nodes.length} themes: ${d.nodes.map((n) => n.id).join(', ')}`}>
+        <defs>
+          <radialGradient id="cg" cx="40%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="var(--surface)" stop-opacity="0.9" />
+            <stop offset="100%" stop-color="var(--wash-1)" stop-opacity="0.55" />
+          </radialGradient>
+        </defs>
+        {d.links.map(([a, b]) => {
+          const A = conceptById[a]; const B = conceptById[b];
+          return A && B ? <line class="c-link" x1={A.x} y1={A.y} x2={B.x} y2={B.y} /> : null;
+        })}
+        {d.nodes.map((n) => (
+          <g class="c-node">
+            <circle cx={n.x} cy={n.y} r={n.r} fill="url(#cg)" style={`opacity:${0.35 + n.weight * 0.6}`} />
+            <circle class="c-dot" cx={n.x} cy={n.y} r="1" />
+            <text x={n.x} y={n.y + n.r * 0.15} class:list={['c-label', { 'c-main': n.weight >= 1 }]}>{n.id}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  )}
+
+  <slot />
+</figure>
+
+<style>
+  .dg { margin: 0; }
+
+  /* ---- Bubbles ---- */
+  .bubbles { position: relative; aspect-ratio: 1 / 0.82; max-width: 880px; margin-inline: auto; }
+  .bubble-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bubble-lines line { stroke: var(--line); stroke-width: 0.25; stroke-dasharray: 0.8 1.2; vector-effect: non-scaling-stroke; }
+  .bubble-center {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 22%; aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center; text-align: center; padding: 1rem;
+    background: var(--ink); color: var(--paper); z-index: 2;
+    font-family: var(--font-display); font-size: clamp(1rem, 2.1vw, 1.6rem); line-height: 1.05;
+  }
+  .bubbles ul { list-style: none; margin: 0; padding: 0; }
+  .bubbles li {
+    position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%);
+    width: 17%; aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center; text-align: center; padding: 0.6rem;
+    background: var(--surface); border: 1px solid var(--ink);
+    font-size: clamp(0.62rem, 1.05vw, 0.85rem); line-height: 1.25;
+    transition: background-color var(--dur-fast), color var(--dur-fast), transform var(--dur) var(--ease-out);
+  }
+  .bubbles li:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); transform: translate(-50%, -50%) scale(1.06); }
+  @media (max-width: 700px) {
+    .bubbles { aspect-ratio: auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
+    .bubble-lines { display: none; }
+    .bubble-center { position: static; transform: none; width: 160px; font-size: 1.25rem; }
+    .bubbles ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+    .bubbles li { position: static; transform: none; width: auto; aspect-ratio: auto; border-radius: 999px; padding: var(--space-2) var(--space-4); font-size: 0.9rem; }
+    .bubbles li:hover { transform: none; }
+  }
+
+  /* ---- Flow ---- */
+  .flow { display: grid; grid-template-columns: repeat(var(--n), 1fr); row-gap: var(--space-5); }
+  .flow-main { display: contents; list-style: none; }
+  .flow-main li {
+    position: relative; display: grid; justify-items: center; gap: var(--space-2); text-align: center;
+  }
+  .flow-main li::before {
+    content: ''; width: min(140px, 82%); aspect-ratio: 1; border-radius: 50%;
+    border: 1px solid var(--ink); background: var(--surface); grid-area: 1 / 1;
+  }
+  .flow-main li:not(:last-child)::after {
+    content: ''; position: absolute; top: calc(min(140px, 82%) / 2 * 0 + 50%); left: calc(50% + min(70px, 41%)); right: calc(-50% + min(70px, 41%));
+    height: 1px; background: var(--ink);
+  }
+  .flow-main li > * { grid-area: 1 / 1; align-self: center; }
+  .flow-num { align-self: start !important; margin-top: 18%; }
+  .flow-text { font-family: var(--font-display); font-size: clamp(1rem, 1.7vw, 1.4rem); line-height: 1.1; padding: 0 12%; }
+  .flow-main li.is-pivot::before { background: var(--ink); }
+  .flow-main li.is-pivot .flow-text, .flow-main li.is-pivot .flow-num { color: var(--paper); }
+  .flow-branch {
+    grid-column: var(--from) / var(--to); position: relative; display: grid; justify-items: center;
+    margin-inline: calc(100% / (var(--to) - var(--from)) / 2); border: 1px dashed var(--ink); border-top: 0; border-radius: 0 0 24px 24px; padding-top: var(--space-6); top: calc(-1 * var(--space-5));
+  }
+  .flow-branch-node {
+    display: grid; justify-items: center; gap: 2px; transform: translateY(50%);
+    background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: var(--space-3) var(--space-5);
+    font-family: var(--font-display); font-size: 1.25rem;
+  }
+  .flow-branch-node .label { color: inherit; opacity: 0.8; font-size: 0.65rem; }
+  @media (max-width: 760px) {
+    .flow { grid-template-columns: 1fr; row-gap: var(--space-3); }
+    .flow-main li { grid-template-columns: auto 1fr; justify-items: start; text-align: left; gap: var(--space-4); }
+    .flow-main li::before { width: 56px; grid-area: 1 / 1; }
+    .flow-main li::after { display: none; }
+    .flow-num { grid-area: 1 / 1 !important; margin: 0 !important; justify-self: center; align-self: center !important; }
+    .flow-text { grid-area: 1 / 2 !important; padding: 0; }
+    .flow-main li.is-pivot .flow-text { color: var(--ink); }
+    .flow-branch { grid-column: 1; margin: 0 0 0 28px; border: 0; border-left: 1px dashed var(--ink); border-radius: 0; padding: var(--space-3) 0 var(--space-3) var(--space-5); justify-items: start; top: 0; }
+    .flow-branch-node { transform: none; }
+  }
+
+  /* ---- Steps ---- */
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: var(--space-4); counter-reset: s; }
+  .steps li { position: relative; display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+  .steps li:not(:last-child)::after { content: ''; position: absolute; top: 28px; left: calc(50% + 36px); right: calc(-50% + 36px + var(--space-4) * -1); height: 1px; background: var(--ink); }
+  .step-dot {
+    width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--ink); display: grid; place-items: center;
+    font-family: var(--font-display); font-size: 1.5rem; background: var(--surface);
+  }
+  .steps li:last-child .step-dot { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .step-text { font-size: 0.95rem; line-height: 1.35; max-width: 18ch; }
+  @media (max-width: 760px) {
+    .steps { grid-template-columns: 1fr; gap: var(--space-5); }
+    .steps li { grid-template-columns: 56px 1fr; justify-items: start; text-align: left; align-items: center; gap: var(--space-4); }
+    .steps li:not(:last-child)::after { top: 56px; left: 28px; right: auto; width: 1px; height: var(--space-5); }
+    .step-text { max-width: none; }
+  }
+
+  /* ---- Phases ---- */
+  .phases { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--ink); }
+  .phase { padding: var(--space-7) var(--space-6); display: grid; gap: var(--space-4); align-content: start; }
+  .phase h3 { font-size: clamp(1.6rem, 3vw, 2.4rem); }
+  .phase ul { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
+  .phase ul li::before { content: '· '; color: var(--muted); }
+  .phase-dark { background: var(--ink); color: var(--paper); }
+  .phase-dark .label, .phase-dark ul li::before { color: color-mix(in srgb, var(--paper) 70%, transparent); }
+  @media (max-width: 640px) { .phases { grid-template-columns: 1fr; } .phase { padding: var(--space-6) var(--space-5); } }
+
+  /* ---- Themes ---- */
+  .themes { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+  .themes li { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }
+  .theme-circle {
+    width: min(220px, 100%); aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; gap: var(--space-2); padding: var(--space-5);
+    background: var(--ink); color: var(--paper); box-shadow: 0 0 0 6px var(--paper), 0 0 0 7px var(--ink);
+  }
+  .theme-circle .label { color: color-mix(in srgb, var(--paper) 65%, transparent); }
+  .theme-title { font-family: var(--font-display); font-size: clamp(1.4rem, 2.4vw, 1.9rem); line-height: 1.05; }
+  .themes p { font-size: 0.98rem; color: var(--ink-soft); max-width: 30ch; margin: 0; }
+  @media (max-width: 760px) {
+    .themes { grid-template-columns: 1fr; }
+    .themes li { grid-template-columns: 120px 1fr; justify-items: start; text-align: left; align-items: center; }
+    .theme-circle { width: 120px; padding: var(--space-3); }
+    .theme-title { font-size: 1.15rem; }
+  }
+
+  /* ---- Journey ---- */
+  .journey { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: var(--space-3); }
+  .journey-stage { display: grid; grid-template-rows: subgrid; grid-row: span var(--rows); gap: 0; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+  .journey-stage h3 { background: var(--ink); color: var(--paper); padding: var(--space-4); font-size: 1.6rem; display: grid; gap: var(--space-1); }
+  .journey-stage h3 .label { color: color-mix(in srgb, var(--paper) 65%, transparent); }
+  .journey-cell { padding: var(--space-4); border-top: 1px solid var(--line); display: grid; gap: var(--space-2); align-content: start; }
+  .journey-list { margin: 0; padding-left: 1.1em; font-size: 0.95rem; line-height: 1.45; display: grid; gap: var(--space-1); }
+  .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .chips li { border: 1px solid var(--ink); border-radius: 999px; padding: 2px var(--space-3); font-size: 0.85rem; }
+  .journey-stage:nth-child(2) .chips li:nth-child(3) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  @media (max-width: 900px) { .journey { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .journey { grid-template-columns: 1fr; } }
+
+  /* ---- Split flow ---- */
+  .split { display: grid; justify-items: center; max-width: 720px; margin-inline: auto; }
+  .split-seq { list-style: none; padding: 0; margin: 0; display: grid; justify-items: center; width: 100%; }
+  .split-seq li, .split-q span {
+    border: 1px solid var(--ink); background: var(--surface); padding: var(--space-4) var(--space-5);
+    text-align: center; max-width: 440px; width: 100%; position: relative;
+  }
+  .split-seq li + li { margin-top: var(--space-6); }
+  .split-seq li + li::before, .split-q::before, .split-after::before {
+    content: ''; position: absolute; left: 50%; top: calc(-1 * var(--space-6)); height: var(--space-6); width: 1px; background: var(--ink);
+  }
+  .split-q { position: relative; margin-top: var(--space-6); width: 100%; display: grid; justify-items: center; }
+  .split-q span { background: var(--ink); color: var(--paper); border-radius: 999px; max-width: 280px; font-family: var(--font-display); font-size: 1.3rem; }
+  .split-groups {
+    list-style: none; padding: var(--space-6) 0 0; margin: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); position: relative;
+  }
+  .split-groups::before { content: ''; position: absolute; top: calc(var(--space-6) / 2); left: 25%; right: 25%; height: var(--space-6); border: 1px solid var(--ink); border-bottom: 0; transform: translateY(-50%); }
+  .split-groups li { border: 1px solid var(--ink); padding: var(--space-5); text-align: center; background: var(--surface); }
+  .split-groups li:first-child { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .split-groups h3 { font-size: 1.8rem; margin-bottom: var(--space-2); }
+  .split-groups p { margin: 0 auto; font-size: 0.95rem; }
+  .split-after { position: relative; margin-top: var(--space-6); }
+  .split-after::before { top: calc(-1 * var(--space-6)); }
+  @media (max-width: 520px) { .split-groups { grid-template-columns: 1fr; } .split-groups::before { display: none; } }
+
+  /* ---- Concepts ---- */
+  .concepts { max-width: 760px; margin-inline: auto; }
+  .concepts svg { width: 100%; height: auto; overflow: visible; }
+  .c-link { stroke: var(--ink); stroke-width: 0.25; opacity: 0.45; }
+  .c-node circle:first-child { stroke: var(--ink); stroke-width: 0.15; stroke-opacity: 0.3; }
+  .c-dot { fill: var(--ink); opacity: 0.5; }
+  .c-label { font-family: var(--font-body); font-size: 3.1px; fill: var(--ink); text-anchor: middle; dominant-baseline: middle; }
+  .c-main { font-family: var(--font-display); font-size: 4.6px; }
+</style>
